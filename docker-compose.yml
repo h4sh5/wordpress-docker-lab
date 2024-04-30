@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: db
+    restart: unless-stopped
+    #env_file: env
+    environment:
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+    volumes:
+      - ./mysql:/var/lib/mysql
+    command: '--default-authentication-plugin=mysql_native_password'
+
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:5.1.1-fpm-alpine
+    container_name: wordpress
+    restart: unless-stopped
+    # env_file: .env
+    environment:
+      - WORDPRESS_DB_HOST=db:3306
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=
+      - WORDPRESS_DB_NAME=wordpress
+    volumes:
+      - ./wordpress-html:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+    ports:
+      - 8888:80
+
+
+  webserver:
+    depends_on:
+      - wordpress
+    image: nginx:1.26-alpine
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./wordpress-html:/var/www/html
+      - ./nginx-conf:/etc/nginx/conf.d
